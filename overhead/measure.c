@@ -116,9 +116,15 @@ int perf_init_object(__u32 type, __u64 config, int cpu)
 struct perf_objects perf_init(void)
 {
 	struct perf_objects po;
-	po.nr_objects = 1;
-	strcpy(po.desc[0], "nr_page_faults");
+	po.nr_objects = 3;
+	strcpy(po.desc[0], "nr_minor_page_faults");
 	po.fd[0] = perf_init_object(PERF_TYPE_SOFTWARE,
+			PERF_COUNT_SW_PAGE_FAULTS_MIN, 0);
+	strcpy(po.desc[1], "nr_major_page_faults");
+	po.fd[1] = perf_init_object(PERF_TYPE_SOFTWARE,
+			PERF_COUNT_SW_PAGE_FAULTS_MAJ, 0);
+	strcpy(po.desc[2], "nr_page_faults");
+	po.fd[2] = perf_init_object(PERF_TYPE_SOFTWARE,
 			PERF_COUNT_SW_PAGE_FAULTS, 0);
 
 	return po;
