@@ -7,6 +7,7 @@
 #include <asm/unistd.h>
 #include <linux/perf_event.h>
 #include <sys/ioctl.h>
+#include <sys/times.h>
 #include <sched.h>
 
 #define PAGE_SIZE		4096
@@ -199,16 +200,21 @@ void access_object(int *object, int size)
 	int i;
 	int nr_iters = 0;
 	int nr_entry = size / sizeof(int);
-	struct timespec start, end;
+	struct tms start, end;
+	clock_t utime, stime;
+	long tps = sysconf(_SC_CLK_TCK);	// tick per second
 
-	clock_gettime(CLOCK_REALTIME, &start);
+	times(&start);
 
 	for (i = 0; nr_iters < nr_entry; i = object[i])
 		nr_iters++;
 
-	clock_gettime(CLOCK_REALTIME, &end);
-	printf("Access time: ");
-	print_interval(&start, &end);
+	times(&end);
+
+	utime = end.tms_utime - start.tms_utime;
+	stime = end.tms_stime - start.tms_stime;
+	printf("Access time (user): %ld.%02lds\n", utime / tps, utime % tps);
+	printf("Access time (sys): %ld.%02lds\n", stime / tps, stime % tps);
 }
 
 void perf_record_end(struct perf_objects *po)
