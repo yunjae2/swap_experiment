@@ -92,8 +92,14 @@ void perf_record_start(void)
 {
 }
 
-void access_object(void)
+void access_object(int *object, int size)
 {
+	int i;
+	int nr_iters = 0;
+	int nr_entry = size / sizeof(int);
+
+	for (i = 0; nr_iters < nr_entry; i = object[i])
+		nr_iters++;
 }
 
 void perf_record_end(void)
@@ -120,7 +126,7 @@ int main(int argc, char **argv)
 	perf_init();
 	init_object(&object, size, access_type);
 	perf_record_start();
-	access_object();
+	access_object(object, size);
 	perf_record_end();
 	perf_report();
 
