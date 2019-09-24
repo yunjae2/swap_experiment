@@ -46,12 +46,13 @@ void init_object(int **objp, long size, int access_type)
 	int nr_entries;
 	int temp;
 	int *access_seq;
-	int *object = *objp;
+	int *object;
 
-	if (posix_memalign((void **)&object, PAGE_SIZE, size)) {
+	if (posix_memalign((void **)objp, PAGE_SIZE, size)) {
 		printf("Object allocation failed!\n");
 		exit(1);
 	}
+	object = *objp;
 
 	memset(object, 0, size);
 
