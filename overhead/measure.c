@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,6 +7,7 @@
 #include <asm/unistd.h>
 #include <linux/perf_event.h>
 #include <sys/ioctl.h>
+#include <sched.h>
 
 #define PAGE_SIZE		4096
 
@@ -71,6 +73,20 @@ int handle_args(int argc, char **argv, struct input_args *args)
 error:
 	printf("Usage: %s <seq|rand> <object size (MiB)>\n", argv[0]);
 	return -1;
+}
+
+int set_affinity(int cpu)
+{
+	cpu_set_t cpu_mask;
+	CPU_ZERO(&cpu_mask);
+	CPU_SET(cpu, &cpu_mask);
+
+	if (sched_setaffinity(0, sizeof(cpu_mask), &cpu_mask)) {
+		printf("Affinity set failed\n");
+		return -1;
+	}
+
+	return 0;
 }
 
 int perf_init_object(__u32 type, __u64 config, int cpu)
@@ -222,6 +238,9 @@ int main(int argc, char **argv)
 
 	size = args.size;
 	access_type = args.access_type;
+
+	if (set_affinity(0))
+		return -1;
 
 	po = perf_init();
 	init_object(&object, size, access_type);
