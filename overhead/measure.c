@@ -2,21 +2,29 @@
 #include <stdlib.h>
 #include <string.h>
 
+enum access_type {
+	SEQUENTIAL = 0,
+	RANDOM,
+};
+
 struct input_args {
 	long size;		// object size
-	char *access_type;	// seq or rand
+	int access_type;	// seq or rand
 };
 
 int handle_args(int argc, char **argv, struct input_args *args)
 {
 	if (argc != 3)
 		goto error;
-	if (strcmp(argv[1], "seq") && strcmp(argv[1], "rand"))
+
+	if (!strcmp(argv[1], "seq"))
+		args->access_type = SEQUENTIAL;
+	else if (!strcmp(argv[1], "rand"))
+		args->access_type = RANDOM;
+	else
 		goto error;
 
 	args->size = atol(argv[2]) * 1024 * 1024;
-	args->access_type = malloc(sizeof(argv[1]));
-	strcpy(args->access_type, argv[1]);
 
 	return 0;
 
