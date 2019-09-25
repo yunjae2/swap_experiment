@@ -1,10 +1,10 @@
-all: measure
+all: measure generate
 
-run: measure
-	./measure
+generate: generate.c
+	gcc generate.c -o generate
 
 measure: measure.c
 	gcc -O0 measure.c -o measure
 
 clean:
-	rm -rf measure
+	rm -rf measure generate

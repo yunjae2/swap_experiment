@@ -1,26 +1,10 @@
 #define _GNU_SOURCE
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <unistd.h>
 #include <asm/unistd.h>
 #include <linux/perf_event.h>
 #include <sys/ioctl.h>
 #include <sys/times.h>
 #include <sched.h>
-
-#define PAGE_SIZE		4096
-
-enum access_type {
-	SEQUENTIAL = 0,
-	RANDOM,
-};
-
-struct input_args {
-	long size;		// object size
-	int access_type;	// seq or rand
-};
+#include "common.h"
 
 struct perf_objects {
 	int nr_objects;		// up to 10
@@ -36,44 +20,6 @@ long perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
 	ret = syscall(__NR_perf_event_open, hw_event, pid, cpu, group_fd,
 			flags);
 	return ret;
-}
-
-
-void print_interval(struct timespec *start, struct timespec *end)
-{
-	time_t diff_sec;
-	long diff_nsec;
-
-	diff_sec = end->tv_sec - start->tv_sec;
-	diff_nsec = end->tv_nsec - start->tv_nsec;
-
-	if (diff_nsec < 0) {
-		diff_nsec += 1000 * 1000 * 1000;
-		diff_sec -= 1;
-	}
-
-	printf("%ld.%06lds\n", diff_sec, diff_nsec / 1000);
-}
-
-int handle_args(int argc, char **argv, struct input_args *args)
-{
-	if (argc != 3)
-		goto error;
-
-	if (!strcmp(argv[1], "seq"))
-		args->access_type = SEQUENTIAL;
-	else if (!strcmp(argv[1], "rand"))
-		args->access_type = RANDOM;
-	else
-		goto error;
-
-	args->size = atol(argv[2]) * 1024 * 1024;
-
-	return 0;
-
-error:
-	printf("Usage: %s <seq|rand> <object size (MiB)>\n", argv[0]);
-	return -1;
 }
 
 int set_affinity(int cpu)
@@ -131,15 +77,13 @@ struct perf_objects perf_init(void)
 	return po;
 }
 
-void init_object(int **objp, long size, int access_type)
+void load_object(int **objp, long size, int access_type)
 {
-	int i, swap_with;
-	int from, to;
 	int nr_entries;
-	int temp;
-	int *access_seq;
 	int *object;
 	struct timespec start, end;
+	FILE *fp;
+	char filename[30];
 
 	clock_gettime(CLOCK_REALTIME, &start);
 
@@ -149,41 +93,18 @@ void init_object(int **objp, long size, int access_type)
 	}
 	object = *objp;
 
-	memset(object, 0, size);
-
-	nr_entries = size / sizeof(int);
-	if (access_type == SEQUENTIAL) {
-		for (i = 0; i < nr_entries; i++)
-			object[i] = (i + 1) % nr_entries;
-	} else {
-		srand(42);
-		access_seq = malloc(size);
-		for (i = 0; i < nr_entries; i++)
-			access_seq[i] = i;
-
-		/* Randomize access sequence */
-		for (i = 0; i < nr_entries; i++) {
-			swap_with = rand() % nr_entries;
-			if (i == swap_with)
-				continue;
-			temp = access_seq[i];
-			access_seq[i] = access_seq[swap_with];
-			access_seq[swap_with] = temp;
-		}
-
-		/* Write access sequence to object */
-		from = access_seq[nr_entries - 1];
-		for (i = 0; i < nr_entries; i++) {
-			to = access_seq[i];
-			object[from] = to;
-			from = to;
-		}
-
-		free(access_seq);
+	sprintf(filename, "objects/%d-%ldMiB.bin", access_type,
+			size / (1024 * 1024));
+	if (access(filename, R_OK)) {
+		printf("Object load failed!\n");
+		exit(1);
 	}
+	fp = fopen(filename, "rb");
+	fread(object, size, 1, fp);
+	fclose(fp);
 
 	clock_gettime(CLOCK_REALTIME, &end);
-	printf("Init time: ");
+	printf("Load time: ");
 	print_interval(&start, &end);
 }
 
@@ -255,7 +176,7 @@ int main(int argc, char **argv)
 		return -1;
 
 	po = perf_init();
-	init_object(&object, size, access_type);
+	load_object(&object, size, access_type);
 	perf_record_start(&po);
 	access_object(object, size);
 	perf_record_end(&po);
