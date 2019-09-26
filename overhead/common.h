@@ -31,6 +31,11 @@ int handle_args(int argc, char **argv, struct input_args *args)
 	args->size = atol(argv[2]) * 1024 * 1024;
 	args->stride = atoi(argv[3]);
 
+	if (args->stride % 4 != 0) {
+		printf("The stride must be a multiple of 4.\n");
+		goto error;
+	}
+
 	return 0;
 
 error:
