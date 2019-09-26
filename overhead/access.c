@@ -77,7 +77,7 @@ struct perf_objects perf_init(void)
 	return po;
 }
 
-void load_object(int **objp, long size, int access_type)
+void load_object(int **objp, long size, int access_type, int stride)
 {
 	int nr_entries;
 	int *object;
@@ -93,8 +93,8 @@ void load_object(int **objp, long size, int access_type)
 	}
 	object = *objp;
 
-	sprintf(filename, "objects/%d-%ldMiB.bin", access_type,
-			size / (1024 * 1024));
+	sprintf(filename, "objects/%d-%ldMiB-%dB.bin", access_type,
+			size / (1024 * 1024), stride);
 	if (access(filename, R_OK)) {
 		printf("Object load failed!\n");
 		exit(1);
@@ -116,11 +116,11 @@ void perf_record_start(struct perf_objects *po)
 		ioctl(po->fd[i], PERF_EVENT_IOC_ENABLE, 0);
 }
 
-void access_object(int *object, int size)
+void access_object(int *object, int size, int stride)
 {
 	int i;
 	int nr_iters = 0;
-	int nr_entry = size / sizeof(int);
+	int nr_entry = size / stride;
 	struct tms start, end;
 	clock_t utime, stime;
 	long tps = sysconf(_SC_CLK_TCK);	// tick per second
@@ -163,6 +163,7 @@ int main(int argc, char **argv)
 	int *object;
 	long size;
 	int access_type;
+	int stride;
 	struct input_args args;
 	struct perf_objects po;
 
@@ -171,14 +172,15 @@ int main(int argc, char **argv)
 
 	size = args.size;
 	access_type = args.access_type;
+	stride = args.stride;
 
 	if (set_affinity(0))
 		return -1;
 
 	po = perf_init();
-	load_object(&object, size, access_type);
+	load_object(&object, size, access_type, stride);
 	perf_record_start(&po);
-	access_object(object, size);
+	access_object(object, size, stride);
 	perf_record_end(&po);
 	perf_report(&po);
 

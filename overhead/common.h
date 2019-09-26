@@ -13,11 +13,12 @@ enum access_type {
 struct input_args {
 	long size;		// object size
 	int access_type;	// seq or rand
+	int stride;		// access stride
 };
 
 int handle_args(int argc, char **argv, struct input_args *args)
 {
-	if (argc != 3)
+	if (argc != 4)
 		goto error;
 
 	if (!strcmp(argv[1], "seq"))
@@ -28,11 +29,12 @@ int handle_args(int argc, char **argv, struct input_args *args)
 		goto error;
 
 	args->size = atol(argv[2]) * 1024 * 1024;
+	args->stride = atoi(argv[3]);
 
 	return 0;
 
 error:
-	printf("Usage: %s <seq|rand> <object size (MiB)>\n", argv[0]);
+	printf("Usage: %s <seq|rand> <object size (MiB)> <access stride (B)>\n", argv[0]);
 	return -1;
 }
 
