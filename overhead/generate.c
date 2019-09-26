@@ -14,6 +14,15 @@ void generate_object(long size, int access_type, int stride)
 	FILE *fp;
 	char filename[30];
 
+	if (access("objects", W_OK))
+		mkdir("objects", 0777);
+	sprintf(filename, "objects/%d-%ldMiB-%dB.bin", access_type,
+			size / (1024 * 1024), stride);
+
+	/* If object exists, use it */
+	if (!access(filename, F_OK))
+		return;
+
 	clock_gettime(CLOCK_REALTIME, &start);
 
 	object = malloc(size);
@@ -55,10 +64,6 @@ void generate_object(long size, int access_type, int stride)
 		free(access_seq);
 	}
 
-	if (access("objects", W_OK))
-		mkdir("objects", 0777);
-	sprintf(filename, "objects/%d-%ldMiB-%dB.bin", access_type,
-			size / (1024 * 1024), stride);
 	fp = fopen(filename, "wb");
 	fwrite(object, size, 1, fp);
 	fclose(fp);
