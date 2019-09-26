@@ -11,6 +11,7 @@ enum access_type {
 };
 
 struct input_args {
+	long memory_size;	// memory size
 	long size;		// object size
 	int access_type;	// seq or rand
 	int stride;		// access stride
@@ -18,7 +19,7 @@ struct input_args {
 
 int handle_args(int argc, char **argv, struct input_args *args)
 {
-	if (argc != 4)
+	if (argc != 5)
 		goto error;
 
 	if (!strcmp(argv[1], "seq"))
@@ -28,8 +29,9 @@ int handle_args(int argc, char **argv, struct input_args *args)
 	else
 		goto error;
 
-	args->size = atol(argv[2]) * 1024 * 1024;
-	args->stride = atoi(argv[3]);
+	args->memory_size = atol(argv[2]) * 1024 * 1024;
+	args->size = atol(argv[3]) * 1024 * 1024;
+	args->stride = atoi(argv[4]);
 
 	if (args->stride % 4 != 0) {
 		printf("The stride must be a multiple of 4.\n");
@@ -39,7 +41,7 @@ int handle_args(int argc, char **argv, struct input_args *args)
 	return 0;
 
 error:
-	printf("Usage: %s <seq|rand> <object size (MiB)> <access stride (B)>\n", argv[0]);
+	printf("Usage: %s <seq|rand> <Memory size (MiB)> <object size (MiB)> <access stride (B)>\n", argv[0]);
 	return -1;
 }
 

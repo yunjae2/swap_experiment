@@ -11,5 +11,5 @@ MEM=$2
 SIZE=$3
 STRIDE=$4
 
-./generate $TYPE $SIZE $STRIDE &&
-./run_memcg_lim.sh $MEM "./access $TYPE $SIZE $STRIDE"
+./generate $TYPE $MEM $SIZE $STRIDE &&
+./run_memcg_lim.sh $MEM "./access $TYPE $MEM $SIZE $STRIDE"

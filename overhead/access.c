@@ -108,6 +108,16 @@ void load_object(int **objp, long size, int access_type, int stride)
 	print_interval(&start, &end);
 }
 
+void pollute_memory(long memory_size)
+{
+	int *pollute;
+
+	pollute = malloc(memory_size);
+	memset(pollute, 0, memory_size);
+
+	free(pollute);
+}
+
 void perf_record_start(struct perf_objects *po)
 {
 	int i;
@@ -161,7 +171,7 @@ void perf_report(struct perf_objects *po)
 int main(int argc, char **argv)
 {
 	int *object;
-	long size;
+	long memory_size, size;
 	int access_type;
 	int stride;
 	struct input_args args;
@@ -170,6 +180,7 @@ int main(int argc, char **argv)
 	if (handle_args(argc, argv, &args))
 		return -1;
 
+	memory_size = args.memory_size;
 	size = args.size;
 	access_type = args.access_type;
 	stride = args.stride;
@@ -179,6 +190,7 @@ int main(int argc, char **argv)
 
 	po = perf_init();
 	load_object(&object, size, access_type, stride);
+	pollute_memory(memory_size);
 	perf_record_start(&po);
 	access_object(object, size, stride);
 	perf_record_end(&po);
