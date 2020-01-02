@@ -15,11 +15,12 @@ struct input_args {
 	long size;		// object size
 	int access_type;	// seq or rand
 	int stride;		// access stride
+	int nr_repeat;		// number of repeat
 };
 
 int handle_args(int argc, char **argv, struct input_args *args)
 {
-	if (argc != 5)
+	if (argc != 6)
 		goto error;
 
 	if (!strcmp(argv[1], "seq"))
@@ -32,6 +33,7 @@ int handle_args(int argc, char **argv, struct input_args *args)
 	args->memory_size = atol(argv[2]) * 1024 * 1024;
 	args->size = atol(argv[3]) * 1024 * 1024;
 	args->stride = atoi(argv[4]);
+	args->nr_repeat = atoi(argv[5]);
 
 	if (args->stride % 4 != 0) {
 		printf("The stride must be a multiple of 4.\n");
@@ -41,7 +43,7 @@ int handle_args(int argc, char **argv, struct input_args *args)
 	return 0;
 
 error:
-	printf("Usage: %s <seq|rand> <Memory size (MiB)> <object size (MiB)> <access stride (B)>\n", argv[0]);
+	printf("Usage: %s <seq|rand> <mem_limit (MiB)> <obj_sz (MiB)> <stride (B)> <nr_repeat>\n", argv[0]);
 	return -1;
 }
 

@@ -126,10 +126,11 @@ void perf_record_start(struct perf_objects *po)
 		ioctl(po->fd[i], PERF_EVENT_IOC_ENABLE, 0);
 }
 
-void access_object(int *object, int size, int stride)
+void access_object(int *object, int size, int stride, int nr_repeat)
 {
 	int i;
-	int nr_iters = 0;
+	int nr_iters;
+	int nr_access = 0;
 	int nr_entry = size / stride;
 	struct tms start, end;
 	clock_t utime, stime;
@@ -137,8 +138,11 @@ void access_object(int *object, int size, int stride)
 
 	times(&start);
 
-	for (i = 0; nr_iters < nr_entry; i = object[i])
-		nr_iters++;
+	i = 0;
+	for (nr_iters = 0; nr_iters < nr_repeat; nr_iters++) {
+		for (nr_access = 0; nr_access < nr_entry; i = object[i])
+			nr_access++;
+	}
 
 	times(&end);
 
@@ -174,6 +178,7 @@ int main(int argc, char **argv)
 	long memory_size, size;
 	int access_type;
 	int stride;
+	int nr_repeat;
 	struct input_args args;
 	struct perf_objects po;
 
@@ -184,6 +189,7 @@ int main(int argc, char **argv)
 	size = args.size;
 	access_type = args.access_type;
 	stride = args.stride;
+	nr_repeat = args.nr_repeat;
 
 	if (set_affinity(0))
 		return -1;
@@ -192,7 +198,7 @@ int main(int argc, char **argv)
 	load_object(&object, size, access_type, stride);
 	pollute_memory(memory_size);
 	perf_record_start(&po);
-	access_object(object, size, stride);
+	access_object(object, size, stride, nr_repeat);
 	perf_record_end(&po);
 	perf_report(&po);
 
