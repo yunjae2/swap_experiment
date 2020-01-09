@@ -140,8 +140,9 @@ void access_object(int *object, int size, int stride, int nr_repeat)
 
 	i = 0;
 	for (nr_iters = 0; nr_iters < nr_repeat; nr_iters++) {
-		for (nr_access = 0; nr_access < nr_entry; i = object[i])
-			nr_access++;
+		for (nr_access = 0; nr_access < nr_entry; nr_access++) {
+			i = object[i];
+		}
 	}
 
 	times(&end);
