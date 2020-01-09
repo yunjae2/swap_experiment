@@ -126,7 +126,7 @@ void perf_record_start(struct perf_objects *po)
 		ioctl(po->fd[i], PERF_EVENT_IOC_ENABLE, 0);
 }
 
-void access_object(int *object, int size, int stride, int nr_repeat)
+void access_object(int *object, long size, int stride, int nr_repeat)
 {
 	int i;
 	int nr_iters;
