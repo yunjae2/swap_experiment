@@ -12,6 +12,15 @@ struct perf_objects {
 	char desc[10][30];	// description for each object
 };
 
+struct vmstat_objects {
+	int nr_objects;		// up to 10
+	FILE *fp;
+	int lineno[10];
+	long initial_cnt[10];
+	long final_cnt[10];
+	char desc[10][30];	// description for each object
+};
+
 long perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
 		int cpu, int group_fd, unsigned long flags)
 {
@@ -77,6 +86,18 @@ struct perf_objects perf_init(void)
 	return po;
 }
 
+struct vmstat_objects vmstat_init(void)
+{
+	struct vmstat_objects vo;
+
+	vo.nr_objects = 2;
+	vo.fp = fopen("/proc/vmstat", "r");
+	vo.lineno[0] = 53;
+	vo.lineno[1] = 54;
+
+	return vo;
+}
+
 void load_object(int **objp, long size, int access_type, int stride)
 {
 	int nr_entries;
@@ -126,6 +147,21 @@ void perf_record_start(struct perf_objects *po)
 		ioctl(po->fd[i], PERF_EVENT_IOC_ENABLE, 0);
 }
 
+void vmstat_record_start(struct vmstat_objects *vo)
+{
+	char buf[80];
+	int len = 80;
+	int i, ln;
+
+	ln = 0;
+	for (i = 0; i < vo->nr_objects; i++) {
+		for (; ln <= vo->lineno[i]; ln++)
+			fgets(buf, len, vo->fp);
+		sscanf(buf, "%s %ld\n", vo->desc[i], &vo->initial_cnt[i]);
+	}
+	fseek(vo->fp, 0, SEEK_SET);
+}
+
 void access_object(int *object, long size, int stride, int nr_repeat)
 {
 	int i;
@@ -161,6 +197,20 @@ void perf_record_end(struct perf_objects *po)
 		ioctl(po->fd[i], PERF_EVENT_IOC_DISABLE, 0);
 }
 
+void vmstat_record_end(struct vmstat_objects *vo)
+{
+	char buf[80];
+	int len = 80;
+	int i, ln;
+
+	ln = 0;
+	for (i = 0; i < vo->nr_objects; i++) {
+		for (; ln <= vo->lineno[i]; ln++)
+			fgets(buf, len, vo->fp);
+		sscanf(buf, "%s %ld\n", vo->desc[i], &vo->final_cnt[i]);
+	}
+}
+
 void perf_report(struct perf_objects *po)
 {
 	int i;
@@ -173,6 +223,19 @@ void perf_report(struct perf_objects *po)
 	}
 }
 
+void vmstat_report(struct vmstat_objects *vo)
+{
+	int i;
+	long count;
+
+	for (i = 0; i < vo->nr_objects; i++) {
+		count = vo->final_cnt[i] - vo->initial_cnt[i];
+		printf("%s: %ld\n", vo->desc[i], count);
+	}
+
+	fclose(vo->fp);
+}
+
 int main(int argc, char **argv)
 {
 	int *object;
@@ -182,6 +245,7 @@ int main(int argc, char **argv)
 	int nr_repeat;
 	struct input_args args;
 	struct perf_objects po;
+	struct vmstat_objects vo;
 
 	if (handle_args(argc, argv, &args))
 		return -1;
@@ -196,12 +260,19 @@ int main(int argc, char **argv)
 		return -1;
 
 	po = perf_init();
+	vo = vmstat_init();
+
 	load_object(&object, size, access_type, stride);
 	pollute_memory(memory_size);
+	vmstat_record_start(&vo);
 	perf_record_start(&po);
+
 	access_object(object, size, stride, nr_repeat);
+
 	perf_record_end(&po);
+	vmstat_record_end(&vo);
 	perf_report(&po);
+	vmstat_report(&vo);
 
 	return 0;
 }
