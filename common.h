@@ -60,5 +60,5 @@ void print_interval(struct timespec *start, struct timespec *end)
 		diff_sec -= 1;
 	}
 
-	printf("%ld.%06lds\n", diff_sec, diff_nsec / 1000);
+	printf("%ld.%02lds\n", diff_sec, diff_nsec / (10 * 1000 * 1000));
 }

@@ -169,9 +169,11 @@ void access_object(int *object, long size, int stride, int nr_repeat)
 	int nr_access = 0;
 	int nr_entry = size / stride;
 	struct tms start, end;
+	struct timespec rstart, rend;
 	clock_t utime, stime;
 	long tps = sysconf(_SC_CLK_TCK);	// tick per second
 
+	clock_gettime(CLOCK_REALTIME, &rstart);
 	times(&start);
 
 	i = 0;
@@ -182,11 +184,14 @@ void access_object(int *object, long size, int stride, int nr_repeat)
 	}
 
 	times(&end);
+	clock_gettime(CLOCK_REALTIME, &rend);
 
 	utime = end.tms_utime - start.tms_utime;
 	stime = end.tms_stime - start.tms_stime;
 	printf("Access time (user): %ld.%02lds\n", utime / tps, utime % tps);
 	printf("Access time (sys): %ld.%02lds\n", stime / tps, stime % tps);
+	printf("Access time (real): ");
+	print_interval(&rstart, &rend);
 }
 
 void perf_record_end(struct perf_objects *po)
