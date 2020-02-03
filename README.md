@@ -19,7 +19,6 @@ $ ./run.sh <seq|rand> <memory limit (MiB)> <object size (MiB)> <stride (B)> <nr_
 ```
 $ ./run.sh seq 8 10 4096 10
 Generating time: 0.01s
-COMM: ./access seq 8 10 4096 10
 Load time: 0.02s
 Access time (user): 0.04s
 Access time (sys): 0.40s
