@@ -1,5 +1,7 @@
 #!/bin/bash
 
+pushd $(dirname $0) > /dev/null
+
 if [ "$#" -ne 5 ]
 then
 	echo "Usage: $0 <seq|rand> <mem_limit (MiB)> <obj_sz (MiB)> <stride (B)> <nr_repeat>"
@@ -14,3 +16,5 @@ REPEAT=$5
 
 ./generate $TYPE $MEM $SIZE $STRIDE $REPEAT &&
 ./run_memcg_lim.sh $MEM "./access $TYPE $MEM $SIZE $STRIDE $REPEAT"
+
+popd > /dev/null
