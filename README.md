@@ -7,7 +7,7 @@ $ make
 
 ## How to run
 ```
-$ ./measure.sh <seq|rand> <memory limit (MiB)> <object size (MiB)> <stride (B)>
+$ ./run.sh <seq|rand> <memory limit (MiB)> <object size (MiB)> <stride (B)> <nr_repeat>
 ```
 
 ## Troubleshooting
