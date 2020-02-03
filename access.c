@@ -89,11 +89,32 @@ struct perf_objects perf_init(void)
 struct vmstat_objects vmstat_init(void)
 {
 	struct vmstat_objects vo;
+	char buf[80];
+	char desc[30];
+	long cnt;
+	int len = 80;
+	int i, lineno;
 
 	vo.nr_objects = 2;
 	vo.fp = fopen("/proc/vmstat", "r");
-	vo.lineno[0] = 53;
-	vo.lineno[1] = 54;
+	vo.lineno[0] = -1;
+	vo.lineno[1] = -1;
+
+	strcpy(vo.desc[0], "pswpin");
+	strcpy(vo.desc[1], "pswpout");
+
+	for (i = 0; i < vo.nr_objects; i++) {
+		lineno = 0;
+		while (fgets(buf, len, vo.fp)) {
+			sscanf(buf, "%s %ld\n", desc, &cnt);
+			if (!strcmp(desc, vo.desc[i])) {
+				vo.lineno[i] = lineno;
+				break;
+			}
+			lineno++;
+		}
+		fseek(vo.fp, 0, SEEK_SET);
+	}
 
 	return vo;
 }
@@ -234,6 +255,8 @@ void vmstat_report(struct vmstat_objects *vo)
 	long count;
 
 	for (i = 0; i < vo->nr_objects; i++) {
+		if (vo->lineno[i] < 0)
+			continue;
 		count = vo->final_cnt[i] - vo->initial_cnt[i];
 		printf("%s: %ld\n", vo->desc[i], count);
 	}
